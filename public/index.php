@@ -1,84 +1,98 @@
 <?php
+session_start();
 require_once "../config/db.php";
+require_once "../includes/functions.php";
 
-// ===========================
-// 1️⃣ Handle Ajax request for participant count
-// ===========================
-if (isset($_GET['ajax_count'])) {
-    $event_id = $_GET['ajax_count'];
-    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM participants WHERE event_id = ?");
-    $stmt->execute([$event_id]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    echo $row['total'];
-    exit; // stop executing the rest of index.php for Ajax
-}
+$keyword = $_GET['q'] ?? '';
 
-// ===========================
-// 2️⃣ Fetch Events (with optional filters)
-// ===========================
 $where = [];
 $params = [];
 
-if (!empty($_GET['month'])) {
-    $where[] = "MONTH(event_date) = ?";
-    $params[] = $_GET['month'];
-}
-
-if (!empty($_GET['category'])) {
-    $where[] = "category = ?";
-    $params[] = $_GET['category'];
-}
-
-if (!empty($_GET['organizer'])) {
-    $where[] = "organizer LIKE ?";
-    $params[] = "%" . $_GET['organizer'] . "%";
+if ($keyword) {
+    $where[] = "(title LIKE ? OR category LIKE ? OR organizer LIKE ?)";
+    $params[] = "%$keyword%";
+    $params[] = "%$keyword%";
+    $params[] = "%$keyword%";
 }
 
 $sql = "SELECT * FROM events";
-if ($where) {
-    $sql .= " WHERE " . implode(" AND ", $where);
-}
+if ($where) $sql .= " WHERE " . implode(" AND ", $where);
+$sql .= " ORDER BY event_date ASC";
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+include "../includes/header.php";
 ?>
 
-<?php include "../includes/header.php"; ?>
-
+<div class="form-container">
 <h2>All Events</h2>
+
+<form method="GET" autocomplete="off" style="position: relative; max-width: 500px;">
+    <input type="text" name="q" id="search-box" placeholder="Search by title, category, or organizer" value="<?= e($keyword) ?>" required>
+    <input type="submit" value="Search">
+    <div id="search-results" style="position: absolute; top: 38px; left: 0; width: 100%; z-index: 10;"></div>
+</form>
+</div>
 
 <?php if ($events): ?>
     <?php foreach ($events as $event): ?>
         <div class="event-card">
-            <h3><?= htmlspecialchars($event['title']) ?></h3>
+            <h3><?= e($event['title']) ?></h3>
             <p>
-                <strong>Category:</strong> <?= htmlspecialchars($event['category']) ?><br>
-                <strong>Organizer:</strong> <?= htmlspecialchars($event['organizer']) ?><br>
-                <strong>Date:</strong> <?= htmlspecialchars($event['event_date']) ?>
+                <strong>Category:</strong> <?= e($event['category']) ?><br>
+                <strong>Organizer:</strong> <?= e($event['organizer']) ?><br>
+                <strong>Date:</strong> <?= e($event['event_date']) ?>
             </p>
 
-            <!-- Register button -->
-            <form method="GET" action="register.php">
-                <input type="hidden" name="event_id" value="<?= $event['id'] ?>">
-                <input type="submit" value="Register for this Event">
-            </form>
+            <?php if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $event['user_id']): ?>
+                <a href="edit.php?id=<?= $event['id'] ?>">Edit</a> |
+                <a href="delete.php?id=<?= $event['id'] ?>" onclick="return confirm('Are you sure?')">Delete</a>
+            <?php endif; ?>
 
-            <!-- Ajax participant count -->
-            <div id="count-<?= $event['id'] ?>">Registered: 0</div>
-            <button onclick="loadCount(<?= $event['id'] ?>)">Refresh Count</button>
+            <?php if (isset($_SESSION['user_id'])): ?>
+                <form method="GET" action="register.php" style="margin-top:5px;">
+                    <input type="hidden" name="event_id" value="<?= $event['id'] ?>">
+                    <input type="submit" value="Register for this Event">
+                </form>
+            <?php else: ?>
+                <p><a href="login.php">Login</a> to register for this event.</p>
+            <?php endif; ?>
         </div>
     <?php endforeach; ?>
 <?php else: ?>
-    <p>No events found.</p>
+    <p style="text-align:center;">No events found.</p>
 <?php endif; ?>
 
-<script src="../assets/js/search.js"></script>
+<!-- Autocomplete JS -->
 <script>
-    // Automatically load participant counts on page load
-    <?php foreach ($events as $event): ?>
-        loadCount(<?= $event['id'] ?>);
-    <?php endforeach; ?>
+document.addEventListener("DOMContentLoaded", function() {
+    const input = document.getElementById("search-box");
+    const results = document.getElementById("search-results");
+
+    input.addEventListener("input", function() {
+        const q = input.value.trim();
+        if (q.length < 2) {
+            results.innerHTML = "";
+            return;
+        }
+
+        fetch(`search_ajax.php?q=${encodeURIComponent(q)}`)
+            .then(res => res.text())  // HTML output
+            .then(data => {
+                results.innerHTML = data;
+            });
+    });
+
+    // Click suggestion fills input
+    results.addEventListener("click", function(e) {
+        if (e.target.classList.contains("search-item")) {
+            input.value = e.target.textContent;
+            results.innerHTML = "";
+        }
+    });
+});
 </script>
 
 <?php include "../includes/footer.php"; ?>
