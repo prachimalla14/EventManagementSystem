@@ -1,10 +1,18 @@
 <?php
 session_start();
 require_once "../config/db.php";
+require_once "../includes/functions.php";
+
+if (isset($_SESSION['user_id'])) {
+    header("Location: index.php");
+    exit;
+}
+
+$error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'];
-    $password = $_POST['password'];
+    $email = $_POST['email'] ?? '';
+    $password = $_POST['password'] ?? '';
 
     $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
     $stmt->execute([$email]);
@@ -14,10 +22,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_name'] = $user['name'];
         $_SESSION['role'] = $user['role'];
+
         header("Location: index.php");
         exit;
     } else {
-        $error = "Invalid credentials";
+        $error = "Invalid email or password";
     }
 }
 ?>
@@ -25,13 +34,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php include "../includes/header.php"; ?>
 
 <div class="form-container">
-<h2>Login</h2>
-<form method="POST">
-    Email: <input type="email" name="email" required><br>
-    Password: <input type="password" name="password" required><br>
-    <input type="submit" value="Login">
-</form>
-<?php if(isset($error)) echo "<p style='color:red;'>$error</p>"; ?>
+    <h2>Login</h2>
+    <form method="POST" autocomplete="off">
+        Email: <input type="email" name="email" required><br>
+        Password: <input type="password" name="password" required><br>
+        <input type="submit" value="Login">
+    </form>
+
+    <?php if ($error): ?>
+        <p style="color:red;"><?= e($error) ?></p>
+    <?php endif; ?>
 </div>
 
 <?php include "../includes/footer.php"; ?>

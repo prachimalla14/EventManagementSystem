@@ -3,47 +3,82 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/functions.php";
 
-if (!isset($_SESSION['user_id'])) {
-    die("Please <a href='login.php'>login</a> to edit events.");
-}
+requireLogin();
 
-if (!isset($_GET['id'])) die("Invalid Event ID");
+if (!isset($_GET['id'])) {
+    header("Location: index.php");
+    exit;
+}
 
 $id = $_GET['id'];
 $stmt = $pdo->prepare("SELECT * FROM events WHERE id = ?");
 $stmt->execute([$id]);
 $event = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if (!$event) die("Event not found");
-if ($event['user_id'] != $_SESSION['user_id']) die("You can only edit your own events");
+if (!$event) die("Event not found.");
+
+if ($_SESSION['user_id'] != $event['user_id'] && $_SESSION['role'] !== 'admin') {
+    die("<p style='color:red;'>Unauthorized access.</p>");
+}
+
+if (empty($_SESSION['csrf_token'])) $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+
+$error = '';
+$success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $stmt = $pdo->prepare("UPDATE events SET title=?, category=?, organizer=?, event_date=?, description=? WHERE id=?");
-    $stmt->execute([
-        $_POST['title'],
-        $_POST['category'],
-        $_POST['organizer'],
-        $_POST['event_date'],
-        $_POST['description'],
-        $id
-    ]);
-    header("Location: index.php");
-    exit;
+    if (empty($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        die("<p style='color:red;'>CSRF validation failed!</p>");
+    }
+
+    $title = trim($_POST['title'] ?? '');
+    $category = trim($_POST['category'] ?? '');
+    $organizer = trim($_POST['organizer'] ?? '');
+    $event_date = $_POST['event_date'] ?? '';
+    $max_participants = $_POST['max_participants'] ?? 50;
+
+    if (!$title || !$category || !$organizer || !$event_date) $error = "All fields are required.";
+
+    if (!$error) {
+        $stmt = $pdo->prepare("UPDATE events SET title=?, category=?, organizer=?, event_date=?, max_participants=? WHERE id=?");
+        if ($stmt->execute([$title, $category, $organizer, $event_date, $max_participants, $id])) {
+            $success = "Event updated successfully!";
+            $stmt = $pdo->prepare("SELECT * FROM events WHERE id=?");
+            $stmt->execute([$id]);
+            $event = $stmt->fetch(PDO::FETCH_ASSOC);
+        } else $error = "Database error. Please try again.";
+    }
 }
+
+include "../includes/header.php";
 ?>
 
-<?php include "../includes/header.php"; ?>
-
 <div class="form-container">
-<h2>Edit Event</h2>
-<form method="POST">
-    Title: <input type="text" name="title" value="<?= htmlspecialchars($event['title']) ?>" required><br>
-    Category: <input type="text" name="category" value="<?= htmlspecialchars($event['category']) ?>" required><br>
-    Organizer: <input type="text" name="organizer" value="<?= htmlspecialchars($event['organizer']) ?>" required><br>
-    Event Date: <input type="date" name="event_date" value="<?= $event['event_date'] ?>" required><br>
-    Description: <textarea name="description" required><?= htmlspecialchars($event['description']) ?></textarea><br>
-    <input type="submit" value="Update Event">
-</form>
+    <h2>Edit Event</h2>
+
+    <?php if ($error): ?><p style="color:red;"><?= e($error) ?></p><?php endif; ?>
+    <?php if ($success): ?><p style="color:green;"><?= e($success) ?></p><?php endif; ?>
+
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
+
+        <label>Title:</label>
+        <input type="text" name="title" value="<?= e($event['title']) ?>" required>
+
+        <label>Category:</label>
+        <input type="text" name="category" value="<?= e($event['category']) ?>" required>
+
+        <label>Organizer:</label>
+        <input type="text" name="organizer" value="<?= e($event['organizer']) ?>" required>
+
+        <label>Date:</label>
+        <input type="date" name="event_date" value="<?= e($event['event_date']) ?>" required>
+
+        <label>Max Participants:</label>
+        <input type="number" name="max_participants" value="<?= e($event['max_participants'] ?? 50) ?>" min="1" required>
+
+        <input type="submit" value="Update Event">
+    </form>
 </div>
 
 <?php include "../includes/footer.php"; ?>

@@ -12,7 +12,6 @@ if ($stmt->rowCount() > 0) {
     exit;
 }
 
-// Insert new admin
 $hash = password_hash($adminPassword, PASSWORD_DEFAULT);
 $stmt = $pdo->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)");
 $stmt->execute([$adminName, $adminEmail, $hash, 'admin']);

@@ -5,7 +5,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (!input) return;
 
-    // Autocomplete as user types
     input.addEventListener("keyup", function () {
         let query = this.value.trim();
 
@@ -14,7 +13,6 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        // Use correct relative path to search_ajax.php
         fetch("search_ajax.php?q=" + encodeURIComponent(query))
             .then(res => res.text())
             .then(data => {
@@ -22,13 +20,11 @@ document.addEventListener("DOMContentLoaded", function () {
             });
     });
 
-    // Click on a search suggestion
     resultsBox.addEventListener("click", function (e) {
         if (e.target.classList.contains("search-item")) {
             input.value = e.target.textContent;
             resultsBox.innerHTML = "";
 
-            // Optional: submit form if needed
             if (input.form) input.form.submit();
         }
     });
