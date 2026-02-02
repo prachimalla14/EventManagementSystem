@@ -1,19 +1,19 @@
 # Event Management System
 
-## Features
+# Features
 - Create, edit, delete events
 - Event search and filtering
 - Attendee registration
 - Ajax-based live updates
 
-## Setup Instructions
+# Setup Instructions
 1. Import the SQL file into phpMyAdmin
 2. Update database credentials in config/db.php
 3. Run the project on the student server
 
-## Security
+# Security
 - Prepared statements (PDO)
 - XSS protection using htmlspecialchars()
 
-## Known Issues
+# Known Issues
 - None
