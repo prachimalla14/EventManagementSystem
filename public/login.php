@@ -3,7 +3,6 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/functions.php";
 
-// If already logged in, go to index
 if (isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit;
@@ -26,7 +25,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($user && password_verify($password, $user['password'])) {
 
-            // Regenerate session ID for security
             session_regenerate_id(true);
 
             $_SESSION['user_id']   = $user['id'];

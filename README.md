@@ -1,19 +1,29 @@
-# Event Management System
+#Event Management System
 
-# Features
-- Create, edit, delete events
-- Event search and filtering
-- Attendee registration
-- Ajax-based live updates
+#Login Credentials
 
-# Setup Instructions
-1. Import the SQL file into phpMyAdmin
-2. Update database credentials in config/db.php
-3. Run the project on the student server
+-User Accounts
+	1.Email: loopy@gmail.com
+	Password: Hello@123
+	2.Email: prachi@gmail.com
+	Password: Hello@123
 
-# Security
-- Prepared statements (PDO)
-- XSS protection using htmlspecialchars()
+-Admin Account
+	Email: admin@example.com
+	Password: admin123
 
-# Known Issues
-- None
+#Features
+-Create, edit, and delete events
+-Search and filter events
+-Register for events
+-Live search suggestions with AJAX
+
+
+#Security
+-SQL Injection protection using prepared statements (PDO)
+-XSS protection using htmlspecialchars()
+-CSRF protection on all forms
+
+#Known Issues
+-Users cannot edit their profile after signup
+-No email confirmation is sent upon registration

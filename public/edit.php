@@ -11,17 +11,20 @@ if (!isset($_GET['id'])) {
 }
 
 $id = $_GET['id'];
+
 $stmt = $pdo->prepare("SELECT * FROM events WHERE id = ?");
 $stmt->execute([$id]);
 $event = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if (!$event) die("Event not found.");
+if (!$event) die("<p style='color:red;'>Event not found. <a href='index.php'>Back</a></p>");
 
 if ($_SESSION['user_id'] != $event['user_id'] && $_SESSION['role'] !== 'admin') {
     die("<p style='color:red;'>Unauthorized access.</p>");
 }
 
-if (empty($_SESSION['csrf_token'])) $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
 $error = '';
 $success = '';
@@ -37,16 +40,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $event_date = $_POST['event_date'] ?? '';
     $max_participants = $_POST['max_participants'] ?? 50;
 
-    if (!$title || !$category || !$organizer || !$event_date) $error = "All fields are required.";
+    if (!$title || !$category || !$organizer || !$event_date) {
+        $error = "All fields are required.";
+    }
 
     if (!$error) {
         $stmt = $pdo->prepare("UPDATE events SET title=?, category=?, organizer=?, event_date=?, max_participants=? WHERE id=?");
         if ($stmt->execute([$title, $category, $organizer, $event_date, $max_participants, $id])) {
             $success = "Event updated successfully!";
+            // Refresh event data
             $stmt = $pdo->prepare("SELECT * FROM events WHERE id=?");
             $stmt->execute([$id]);
             $event = $stmt->fetch(PDO::FETCH_ASSOC);
-        } else $error = "Database error. Please try again.";
+        } else {
+            $error = "Database error. Please try again.";
+        }
     }
 }
 
@@ -56,8 +64,12 @@ include "../includes/header.php";
 <div class="form-container">
     <h2>Edit Event</h2>
 
-    <?php if ($error): ?><p style="color:red;"><?= e($error) ?></p><?php endif; ?>
-    <?php if ($success): ?><p style="color:green;"><?= e($success) ?></p><?php endif; ?>
+    <?php if ($error): ?>
+        <p style="color:red;"><?= e($error) ?></p>
+    <?php endif; ?>
+    <?php if ($success): ?>
+        <p style="color:green;"><?= e($success) ?></p>
+    <?php endif; ?>
 
     <form method="POST">
         <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
@@ -79,6 +91,20 @@ include "../includes/header.php";
 
         <input type="submit" value="Update Event">
     </form>
+
+    <div style="margin-top: 15px;">
+        <a href="index.php">
+            <button type="button" style="
+                background:#c2f0c2;
+                color:#4b3e4d;
+                border:none;
+                padding:10px 15px;
+                border-radius:8px;
+                cursor:pointer;">
+                &larr; Back to Events
+            </button>
+        </a>
+    </div>
 </div>
 
 <?php include "../includes/footer.php"; ?>

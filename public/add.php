@@ -39,8 +39,12 @@ include "../includes/header.php";
 <div class="form-container">
     <h2>Add Event</h2>
 
-    <?php if ($error): ?><p style="color:red;"><?= e($error) ?></p><?php endif; ?>
-    <?php if ($success): ?><p style="color:green;"><?= e($success) ?></p><?php endif; ?>
+    <?php if ($error): ?>
+        <p style="color:red;"><?= e($error) ?></p>
+    <?php endif; ?>
+    <?php if ($success): ?>
+        <p style="color:green;"><?= e($success) ?></p>
+    <?php endif; ?>
 
     <form method="POST">
         <input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>">
@@ -62,6 +66,21 @@ include "../includes/header.php";
 
         <input type="submit" value="Add Event">
     </form>
+
+    <!-- Back button -->
+    <div style="margin-top: 15px;">
+        <a href="index.php">
+            <button type="button" style="
+                background:#c2f0c2;
+                color:#4b3e4d;
+                border:none;
+                padding:10px 15px;
+                border-radius:8px;
+                cursor:pointer;">
+                &larr; Back to Events
+            </button>
+        </a>
+    </div>
 </div>
 
 <?php include "../includes/footer.php"; ?>
