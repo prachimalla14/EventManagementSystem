@@ -1,8 +1,9 @@
 <?php
-session_start();
-require_once "../config/db.php";
-require_once "../includes/functions.php";
+session_start(); // Start session
+require_once "../config/db.php"; // DB connection
+require_once "../includes/functions.php"; 
 
+// Redirect if already logged in
 if (isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit;
@@ -12,21 +13,26 @@ $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
+    // Get login inputs
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
 
+    // Basic validation
     if (!$email || !$password) {
         $error = "All fields are required.";
     } else {
 
+        // Fetch user by email
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
+        // Verify password
         if ($user && password_verify($password, $user['password'])) {
 
-            session_regenerate_id(true);
+            session_regenerate_id(true); // Prevent session fixation
 
+            // Store user data in session
             $_SESSION['user_id']   = $user['id'];
             $_SESSION['user_name'] = $user['name'];
             $_SESSION['role']      = $user['role'];
@@ -46,6 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="form-container">
     <h2>Login</h2>
 
+    <!-- Login form -->
     <form method="POST" autocomplete="off">
         Email:<br>
         <input type="email" name="email" required><br><br>

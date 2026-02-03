@@ -1,10 +1,11 @@
+// Live search functionality
 document.addEventListener("DOMContentLoaded", function () {
 
     const input = document.getElementById("search-box");
     const resultsBox = document.getElementById("search-results");
-
     if (!input) return;
 
+    // Fetch results on typing
     input.addEventListener("keyup", function () {
         let query = this.value.trim();
 
@@ -20,6 +21,7 @@ document.addEventListener("DOMContentLoaded", function () {
             });
     });
 
+    // Fill input and submit form when item clicked
     resultsBox.addEventListener("click", function (e) {
         if (e.target.classList.contains("search-item")) {
             input.value = e.target.textContent;

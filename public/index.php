@@ -1,13 +1,14 @@
 <?php
-session_start();
-require_once "../config/db.php";
-require_once "../includes/functions.php";
+session_start(); // Session start
+require_once "../config/db.php"; // DB connection
+require_once "../includes/functions.php"; // Helpers
 
 $keyword = $_GET['q'] ?? '';
 
 $where = [];
 $params = [];
 
+// Search filter
 if ($keyword) {
     $where[] = "(title LIKE ? OR category LIKE ? OR organizer LIKE ?)";
     $params[] = "%$keyword%";
@@ -15,6 +16,7 @@ if ($keyword) {
     $params[] = "%$keyword%";
 }
 
+// Build query
 $sql = "SELECT * FROM events";
 if ($where) $sql .= " WHERE " . implode(" AND ", $where);
 $sql .= " ORDER BY event_date ASC";
@@ -40,6 +42,7 @@ include "../includes/header.php";
         <p><a href="login.php">Login</a> to add or register for events.</p>
     <?php endif; ?>
 
+    <!-- Search form -->
     <form method="GET" autocomplete="off" style="position: relative; max-width: 500px;">
         <input type="text" name="q" id="search-box"
                placeholder="Search by title, category, or organizer"
@@ -61,10 +64,11 @@ include "../includes/header.php";
             </p>
 
             <?php
-            $currentCount = participantCount($pdo, $event['id']);
+            $currentCount = participantCount($pdo, $event['id']); // Current registrations
             $max = $event['max_participants'] ?? null;
             ?>
-            <p>Registered: <strong><?= $currentCount ?></strong>
+            <p>
+                Registered: <strong><?= $currentCount ?></strong>
                 <?php if ($max): ?> / <strong><?= e($max) ?></strong><?php endif; ?>
             </p>
 
@@ -77,17 +81,21 @@ include "../includes/header.php";
                 <div style="margin-bottom:5px;">
                     <a href="edit.php?id=<?= $event['id'] ?>">Edit</a>
 
-                    <!-- CSRF-protected Delete Form -->
+                    <!-- CSRF-protected delete -->
                     <form method="POST" action="delete.php" style="display:inline;">
                         <input type="hidden" name="id" value="<?= $event['id'] ?>">
                         <input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>">
-                        <button type="submit" onclick="return confirm('Are you sure you want to delete this event?')">Delete</button>
+                        <button type="submit"
+                                onclick="return confirm('Are you sure you want to delete this event?')">
+                            Delete
+                        </button>
                     </form>
                 </div>
             <?php endif; ?>
 
             <?php if (isset($_SESSION['user_id'])): ?>
                 <?php if (!$max || $currentCount < $max): ?>
+                    <!-- Registration form -->
                     <form method="POST" action="register.php" style="margin-top:5px;">
                         <input type="hidden" name="event_id" value="<?= $event['id'] ?>">
                         <input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>">
@@ -108,6 +116,7 @@ include "../includes/header.php";
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+    // Live search (AJAX)
     const input = document.getElementById("search-box");
     const results = document.getElementById("search-results");
 
@@ -132,5 +141,4 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 
-<?php include "../includes/footer.php"; ?>
-
+<?php include "../includes/footer.php"; // Footer ?>

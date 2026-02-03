@@ -1,12 +1,13 @@
 <?php
-session_start();
-require_once "../config/db.php";
-require_once "../includes/functions.php";
+session_start(); // Start session
+require_once "../config/db.php"; // DB connection
+require_once "../includes/functions.php"; 
 
-$keyword = $_GET['q'] ?? '';
+$keyword = $_GET['q'] ?? ''; // Get search keyword
 $where = [];
 $params = [];
 
+// Filter events if keyword provided
 if ($keyword) {
     $where[] = "(title LIKE ? OR category LIKE ? OR organizer LIKE ?)";
     $params[] = "%$keyword%";
@@ -14,6 +15,7 @@ if ($keyword) {
     $params[] = "%$keyword%";
 }
 
+// Build SQL query
 $sql = "SELECT * FROM events";
 if ($where) $sql .= " WHERE " . implode(" AND ", $where);
 $sql .= " ORDER BY event_date ASC";
@@ -27,8 +29,11 @@ include "../includes/header.php";
 
 <div class="form-container">
     <h2>Search Events</h2>
+    <!-- Search form -->
     <form method="GET" autocomplete="off">
-        <input type="text" name="q" id="search-box" placeholder="Start typing to search events..." value="<?= e($keyword) ?>" required>
+        <input type="text" name="q" id="search-box"
+               placeholder="Start typing to search events..."
+               value="<?= e($keyword) ?>" required>
         <input type="submit" value="Search">
         <div id="search-results"></div>
     </form>
@@ -38,7 +43,7 @@ include "../includes/header.php";
 <?php if ($events): ?>
     <?php foreach ($events as $event): ?>
         <?php
-        $regCount = participantCount($pdo, $event['id']);
+        $regCount = participantCount($pdo, $event['id']); // Current participants
         $isOwner = isset($_SESSION['user_id']) && $_SESSION['user_id'] == $event['user_id'];
         $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
         $canRegister = isset($_SESSION['user_id']) && $regCount < ($event['max_participants'] ?? 50);
@@ -55,16 +60,20 @@ include "../includes/header.php";
             <?php if ($isOwner || $isAdmin): ?>
                 <div style="margin-bottom:5px;">
                     <a href="edit.php?id=<?= $event['id'] ?>">Edit</a>
+                    <!-- CSRF-protected delete form -->
                     <form method="POST" action="delete.php" style="display:inline;">
                         <input type="hidden" name="id" value="<?= $event['id'] ?>">
                         <input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>">
-                        <button type="submit" onclick="return confirm('Are you sure you want to delete this event?')">Delete</button>
+                        <button type="submit" onclick="return confirm('Are you sure you want to delete this event?')">
+                            Delete
+                        </button>
                     </form>
                 </div>
             <?php endif; ?>
 
             <?php if (isset($_SESSION['user_id'])): ?>
                 <?php if ($canRegister): ?>
+                    <!-- CSRF-protected registration form -->
                     <form method="POST" action="register.php" style="margin-top:5px;">
                         <input type="hidden" name="event_id" value="<?= $event['id'] ?>">
                         <input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>">
@@ -85,6 +94,7 @@ include "../includes/header.php";
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+    // Live AJAX search
     const input = document.getElementById("search-box");
     const results = document.getElementById("search-results");
 
@@ -97,6 +107,7 @@ document.addEventListener("DOMContentLoaded", function() {
             .then(data => { results.innerHTML = data; });
     });
 
+    // Select from AJAX suggestions
     results.addEventListener("click", function(e) {
         if (e.target.classList.contains("search-item")) {
             input.value = e.target.textContent;
@@ -106,4 +117,4 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 
-<?php include "../includes/footer.php"; ?>
+<?php include "../includes/footer.php"; // Footer ?>
